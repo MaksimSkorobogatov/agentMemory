@@ -17,76 +17,138 @@ This skill extends your capabilities by providing a persistent, searchable memor
 
 ## Setup
 
-### For VS Code Agents (Cline, RooCode, KiloCode)
+### 1. Choose Your Agents (Required!)
 
-1. **Install Dependencies**:
-   ```bash
-   cd ~/.agents/skills/agent-memory && npm install && npm run compile
-   ```
+Before initializing the memory bank, you MUST ask the user which AI coding agents they plan to use in this project.
 
-2. **Start the Memory Server**:
-   ```bash
-   npm run start-server <project_id> <absolute_path_to_workspace>
-   ```
+**Supported agents:**
 
-### For OpenCode (Terminal-based Agent)
+| # | Agent | Type | Memory Bank Path |
+|---|-------|------|------------------|
+| 1 | **KiloCode** | VS Code Extension | `.kilocode/rules/memory-bank/` |
+| 2 | **Cline** | VS Code Extension | `.clinerules/memory-bank/` |
+| 3 | **RooCode** | VS Code Extension | `.roo/memory-bank/` |
+| 4 | **OpenCode** | Terminal TUI | `.opencode/memory-bank/` |
 
-1. **Build the MCP server**:
-   ```bash
-   cd ~/.agents/skills/agent-memory && npm install && npm run compile
-   ```
+**Ask the user:**
+```
+Which AI coding agents will you use for this project? 
+You can select multiple:
+[ ] KiloCode
+[ ] Cline
+[ ] RooCode
+[ ] OpenCode
+```
 
-2. **Add MCP server to your `opencode.json`** in the project root:
-   ```json
-   {
-     "$schema": "https://opencode.ai/config.json",
-     "mcp": {
-       "agentmemory": {
-         "type": "local",
-         "command": ["node", "/Users/YOUR_USER/.agents/skills/agent-memory/out/mcp-server/server.js", "PROJECT_ID", "/ABSOLUTE/PATH/TO/WORKSPACE"],
-         "enabled": true
-       }
-     }
-   }
-   ```
-   Replace `YOUR_USER`, `PROJECT_ID`, and `/ABSOLUTE/PATH/TO/WORKSPACE` with actual values.
+Then configure them using the MCP tool:
+```
+configure_agents({ agents: "kilocode,opencode" })
+```
 
-3. **Add memory instructions to `AGENTS.md`** in the project root:
-   ```markdown
-   ## agentMemory System (REQUIRED)
+### 2. Build the MCP Server
 
-   This project uses agentMemory for persistent knowledge management.
+Once agents are configured, install dependencies and compile:
+```bash
+cd ~/.agents/skills/agent-memory && npm install && npm run compile
+```
 
-   ### Required Workflow
+### 3. Start the Memory Server
 
-   **EVERY task MUST follow this sequence:**
+#### For VS Code Agents (Cline, RooCode, KiloCode)
 
-   1. **Before ANY work:** Call `memory_search()` to check existing knowledge
-   2. **After ANY significant work:** Call `memory_write()` to document what was done
+```bash
+npm run start-server <project_id> <absolute_path_to_workspace>
+```
 
-   ### Available MCP Tools
+#### For OpenCode (Terminal-based Agent)
 
-   - `agentmemory_memory_search` - Search for memories by query, type, or tags
-   - `agentmemory_memory_write` - Save new memory
-   - `agentmemory_memory_read` - Retrieve specific memory by key
-   - `agentmemory_memory_list` - List memories by type
-   - `agentmemory_memory_update` - Update existing memory
-   - `agentmemory_memory_stats` - View memory statistics
-   - `agentmemory_project_init` - Initialize project storage
+```bash
+# Include the agents you configured:
+node ~/.agents/skills/agent-memory/out/mcp-server/server.js <PROJECT_ID> <ABSOLUTE/PATH> --agents=kilocode,opencode
+```
 
-   **Failure to use memory tools = Incomplete work**
-   ```
+Or add to your `opencode.json` in the project root:
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "agentmemory": {
+      "type": "local",
+      "command": [
+        "node",
+        "/Users/YOUR_USER/.agents/skills/agent-memory/out/mcp-server/server.js",
+        "PROJECT_ID",
+        "/ABSOLUTE/PATH/TO/WORKSPACE",
+        "--agents=kilocode,opencode"
+      ],
+      "enabled": true
+    }
+  }
+}
+```
+Replace `YOUR_USER`, `PROJECT_ID`, `/ABSOLUTE/PATH/TO/WORKSPACE`, and the agents list with actual values.
 
-4. **Optionally add custom commands** to `.opencode/commands/memory-search.md`:
-   ```markdown
-   ---
-   description: Search project memories
-   ---
-   Search the agentMemory system for relevant context about: $ARGUMENTS
+### 4. Add Memory Instructions to `AGENTS.md`
 
-   Use the agentmemory_memory_search tool with query "$ARGUMENTS".
-   If results are found, summarize them clearly. If no results, suggest creating a new memory.
-   ```
+Create or update `AGENTS.md` in the project root:
+```markdown
+## agentMemory System (REQUIRED)
+
+This project uses agentMemory for persistent knowledge management.
+
+### Required Workflow
+
+**EVERY task MUST follow this sequence:**
+
+1. **Before ANY work:** Call `memory_search()` to check existing knowledge
+2. **After ANY significant work:** Call `memory_write()` to document what was done
+
+### Available MCP Tools
+
+- `agentmemory_memory_search` — Search for memories by query, type, or tags
+- `agentmemory_memory_write` — Save new memory
+- `agentmemory_memory_read` — Retrieve specific memory by key
+- `agentmemory_memory_list` — List memories by type
+- `agentmemory_memory_update` — Update existing memory
+- `agentmemory_memory_stats` — View memory statistics
+- `agentmemory_configure_agents` — Change which agents to sync with
+
+**Failure to use memory tools = Incomplete work**
+```
+
+### 5. Optionally Add Custom Commands
+
+To `.opencode/commands/memory-search.md`:
+```markdown
+---
+description: Search project memories
+---
+Search the agentMemory system for relevant context about: $ARGUMENTS
+
+Use the agentmemory_memory_search tool with query "$ARGUMENTS".
+If results are found, summarize them clearly. If no results, suggest creating a new memory.
+```
+
+## Changing Agents Later
+
+If the user wants to add or remove agents after initial setup, use:
+```
+configure_agents({ agents: "kilocode,roocode" })
+```
+
+Or run interactively (only in TTY):
+```
+configure_agents({ interactive: true })
+```
+
+The configuration is stored in `.agentMemory/agents.json`:
+```json
+{
+  "selectedAgents": ["kilocode", "opencode"],
+  "createdAt": "2025-01-15T10:00:00Z",
+  "updatedAt": "2025-01-15T10:00:00Z"
+}
+```
 
 ## Capabilities (MCP Tools)
 
@@ -108,8 +170,13 @@ Retrieve specific memory content by key.
 - **Usage**: "Get the auth design" -> `memory_read({ key: "auth-v1" })`
 
 ### `memory_stats`
-View analytics on memory usage.
+View analytics on memory usage, including which agents are active.
 - **Usage**: "Show memory statistics" -> `memory_stats({})`
+
+### `configure_agents`
+Switch which agents receive memory bank sync.
+- **Args**: `agents` (string — comma-separated)
+- **Usage**: `configure_agents({ agents: "kilocode,opencode" })`
 
 ## Supported Agents
 
@@ -118,13 +185,28 @@ View analytics on memory usage.
 | KiloCode | VS Code Extension | VS Code MCP settings | `.kilocode/rules/memory-bank/` |
 | Cline | VS Code Extension | VS Code MCP settings | `.clinerules/memory-bank/` |
 | RooCode | VS Code Extension | VS Code MCP settings | `.roo/memory-bank/` |
-| **OpenCode** | Terminal TUI | `opencode.json` | `AGENTS.md` + `.opencode/commands/` |
+| **OpenCode** | Terminal TUI | `opencode.json` | `.opencode/memory-bank/` |
 
 ## Workflow
 
-1. **Initialization**: The first time you run this in a project, it may attempt to import existing markdown memory banks from `.kilocode/`, `.clinerules/`, `.roo/`, or `AGENTS.md`.
+1. **Initialization**: The first time you run this in a project, ask which agents to use and call `configure_agents()`.
 2. **Development Loop**:
    - **Before Task**: Search memory for relevant context.
    - **During Task**: Use read/search to answer questions.
    - **After Task**: Write new findings to memory.
-3. **Sync**: Your writes are automatically synced to standard markdown files in the project.
+3. **Sync**: Your writes are automatically synced to standard markdown files **only for the selected agents**.
+
+## Why Agent Selection Matters
+
+Previously, agentMemory automatically created configuration and files for **all agents** (KiloCode, Cline, RooCode, OpenCode) simultaneously, which cluttered the project directory with files the user never intended to use.
+
+Now, only the agents you explicitly choose will have:
+- Memory bank directories created
+- MCP settings configured
+- Memory files synced
+
+This keeps your project clean and focused.
+
+Base directory for this skill: file:///Users/maksim/.agents/skills/agent-memory
+Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.
+Note: file list is sampled.
